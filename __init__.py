@@ -20,6 +20,8 @@ def create_note_type_if_needed():
     for field_name in ["Image", "Answer", "Header"]:
         models.addField(model, models.newField(field_name))
 
+    model['sortf'] = 2
+
     # Add a card template
     template = {
         'name': 'Card 1',
