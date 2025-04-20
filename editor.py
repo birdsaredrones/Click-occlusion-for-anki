@@ -3,8 +3,8 @@ from aqt.qt import QWidget, QVBoxLayout, QLabel, QPushButton, QPixmap, QPainter,
 from aqt.utils import showInfo
 import os
 from PyQt6.QtWidgets import QLineEdit, QHBoxLayout  # Add at the top with your other imports
-from PyQt6.QtGui import QKeySequence
-from PyQt6.QtGui import QShortcut
+from PyQt6.QtGui import QKeySequence, QShortcut
+from PyQt6.QtCore import QPoint, Qt
 
 class ImageOcclusionEditor(QWidget):
     def __init__(self, image_path):
@@ -18,12 +18,10 @@ class ImageOcclusionEditor(QWidget):
         layout = QVBoxLayout()
         button_layout = QHBoxLayout()
 
-        #undo button
+        # Undo button
         self.undo_button = QPushButton("Undo")
         self.undo_button.setToolTip("Ctrl+Z: Remove the last box you drew")
         self.undo_button.clicked.connect(self.undo_last_box)
-        undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
-        undo_shortcut.activated.connect(self.undo_last_box)
         button_layout.addWidget(self.undo_button)
 
         # Header input
@@ -38,9 +36,6 @@ class ImageOcclusionEditor(QWidget):
         self.extra_input.setToolTip("only on the answer side")
         layout.addWidget(self.extra_input)
 
-        #self.label = QLabel(f"Selected image: {os.path.basename(image_path)}")
-        #layout.addWidget(self.label)
-
         self.image_label = QLabel()
         self.pixmap = QPixmap(image_path)
         self.image_label.setPixmap(self.pixmap)
@@ -50,7 +45,7 @@ class ImageOcclusionEditor(QWidget):
         self.image_label.mouseMoveEvent = self.update_draw
         self.image_label.mouseReleaseEvent = self.end_draw
 
-        #create button
+        # Create button
         self.create_button = QPushButton("Create Card")
         self.create_button.clicked.connect(self.create_card)
         button_layout.addWidget(self.create_button)
@@ -58,6 +53,16 @@ class ImageOcclusionEditor(QWidget):
         layout.addLayout(button_layout)
         self.setLayout(layout)
         self.resize(self.pixmap.width() + 40, self.pixmap.height() + 140)
+
+        # Set focus policy
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+    def showEvent(self, event):
+        # Create the shortcut once the widget is shown
+        undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
+        undo_shortcut.activated.connect(self.undo_last_box)
+        super().showEvent(event)
+
 
     def update_tooltip(self):
         self.create_button.setToolTip(f"Creates 1 card with {len(self.occlusion_boxes)} occlusions.")
@@ -70,7 +75,7 @@ class ImageOcclusionEditor(QWidget):
             self.pixmap = QPixmap(self.image_path)
             painter = QPainter(self.pixmap)
             painter.setPen(QColor(255, 0, 0))
-            fill_color = QColor(128, 128, 128, 180)  # Same grey as when drawing
+            fill_color = QColor(128, 128, 128, 230)  # Same grey as when drawing
 
             for rect in self.occlusion_boxes:
                 painter.fillRect(rect, fill_color)
@@ -82,7 +87,7 @@ class ImageOcclusionEditor(QWidget):
 
     def start_draw(self, event: QMouseEvent):
         self.drawing = True
-        self.start_point = event.pos()
+        self.start_point = event.pos() - QPoint(0, 13)
 
     def update_draw(self, event: QMouseEvent):
         if self.drawing:
